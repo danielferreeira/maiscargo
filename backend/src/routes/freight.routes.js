@@ -10,6 +10,7 @@ routes.use(authMiddleware);
 // Rotas específicas primeiro
 routes.get('/data/financial', FreightController.getFinancialData);
 routes.get('/data/available', FreightController.available);
+routes.get('/:id/nearby-carriers', FreightController.findNearbyCarriers);
 routes.get('/', FreightController.index);
 
 // Rotas com parâmetros depois

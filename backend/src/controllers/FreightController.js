@@ -741,6 +741,94 @@ class FreightController {
       });
     }
   }
+
+  async findNearbyCarriers(req, res) {
+    try {
+      const { id } = req.params;
+      
+      if (!id) {
+        return res.status(400).json({ error: 'ID do frete é obrigatório' });
+      }
+
+      // Busca o frete
+      const freight = await Freight.findOne({
+        where: { id },
+        attributes: ['id', 'origin_lat', 'origin_lng', 'vehicle_type']
+      });
+
+      if (!freight) {
+        return res.status(404).json({ error: 'Frete não encontrado' });
+      }
+
+      // Busca transportadores ativos
+      const carriers = await User.findAll({
+        where: {
+          type: 'transportador',
+          status: 'ativo'
+        },
+        attributes: ['id', 'name', 'email', 'phone', 'cidade', 'estado', 'raio_busca'],
+        include: [{
+          model: Vehicle,
+          as: 'vehicles',
+          where: {
+            type: freight.vehicle_type,
+            status: 'disponivel'
+          },
+          required: true
+        }]
+      });
+
+      // Calcula a distância de cada transportador até a origem do frete
+      const carriersWithDistance = await Promise.all(carriers.map(async carrier => {
+        const carrierData = carrier.get({ plain: true });
+        
+        try {
+          // Obter coordenadas do transportador
+          const carrierAddress = `${carrier.cidade}, ${carrier.estado}, Brasil`;
+          const carrierCoords = await obterCoordenadas(carrierAddress);
+          
+          // Calcula a distância usando a função de Haversine
+          const distanceToOrigin = calcularDistanciaHaversine(
+            freight.origin_lat,
+            freight.origin_lng,
+            carrierCoords.lat,
+            carrierCoords.lng
+          );
+
+          return {
+            ...carrierData,
+            distanceToOrigin,
+            withinRange: distanceToOrigin <= carrier.raio_busca
+          };
+        } catch (error) {
+          console.error(`Erro ao obter coordenadas para ${carrier.cidade}, ${carrier.estado}:`, error);
+          return {
+            ...carrierData,
+            distanceToOrigin: Infinity,
+            withinRange: false
+          };
+        }
+      }));
+
+      // Ordena por distância e se está dentro do raio de busca
+      const sortedCarriers = carriersWithDistance
+        .filter(carrier => carrier.distanceToOrigin !== Infinity)
+        .sort((a, b) => {
+          if (a.withinRange === b.withinRange) {
+            return a.distanceToOrigin - b.distanceToOrigin;
+          }
+          return a.withinRange ? -1 : 1;
+        });
+
+      return res.json(sortedCarriers);
+    } catch (error) {
+      console.error('Erro ao buscar transportadores próximos:', error);
+      return res.status(500).json({ 
+        error: 'Erro ao buscar transportadores próximos',
+        details: error.message
+      });
+    }
+  }
 }
 
 export default new FreightController(); 

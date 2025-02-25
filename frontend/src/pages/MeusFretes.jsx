@@ -13,10 +13,14 @@ import {
   Alert,
   CircularProgress,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from '@mui/material';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import TransportadoresProximos from '../components/TransportadoresProximos';
 
 export default function MeusFretes() {
   const location = useLocation();
@@ -26,6 +30,8 @@ export default function MeusFretes() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(location.state?.message || '');
   const [tabValue, setTabValue] = useState(0);
+  const [selectedFreteId, setSelectedFreteId] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (success) {
@@ -158,6 +164,28 @@ export default function MeusFretes() {
     finalizados: fretesFiltrados.filter(f => ['finalizado', 'cancelado'].includes(f.status)),
   };
 
+  const handleVerTransportadores = (freteId) => {
+    setSelectedFreteId(freteId);
+    setDialogOpen(true);
+  };
+
+  const renderFreteButtons = (frete) => {
+    return (
+      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+        {renderActionButtons(frete)}
+        {user.type === 'embarcador' && frete.status === 'disponivel' && (
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => handleVerTransportadores(frete.id)}
+          >
+            Ver Transportadores
+          </Button>
+        )}
+      </Box>
+    );
+  };
+
   return (
     <Layout>
       <Container maxWidth="lg">
@@ -248,7 +276,7 @@ export default function MeusFretes() {
                             <Typography variant="body2" sx={{ mb: 2 }}>
                               Entrega: {formatarData(frete.delivery_date)}
                             </Typography>
-                            {renderActionButtons(frete)}
+                            {renderFreteButtons(frete)}
                           </Box>
                         </Grid>
                       </Grid>
@@ -266,6 +294,26 @@ export default function MeusFretes() {
             </Grid>
           )}
         </Box>
+
+        {/* Diálogo de Transportadores Próximos */}
+        <Dialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            Transportadores Próximos
+          </DialogTitle>
+          <DialogContent>
+            {selectedFreteId && (
+              <TransportadoresProximos 
+                freteId={selectedFreteId}
+                onClose={() => setDialogOpen(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </Container>
     </Layout>
   );
