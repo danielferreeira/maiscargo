@@ -12,11 +12,12 @@ import {
   MenuItem,
   InputAdornment,
   CircularProgress,
+  Stack,
 } from '@mui/material';
-import { Calculate as CalculateIcon, Save as SaveIcon } from '@mui/icons-material';
+import { Calculate as CalculateIcon, Save as SaveIcon, Close as CloseIcon } from '@mui/icons-material';
 import api from '../services/api';
 
-export default function CustoViagemCalculator({ veiculo, distancia, valorFrete, freteId }) {
+export default function CustoViagemCalculator({ veiculo, distancia, valorFrete, freteId, onClose, onSave }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -106,6 +107,17 @@ export default function CustoViagemCalculator({ veiculo, distancia, valorFrete, 
 
       await api.put(`/freights/${freteId}/costs`, dadosCustos);
       setSuccess('Custos salvos com sucesso!');
+      
+      // Recarrega os dados financeiros
+      if (onSave) {
+        await onSave();
+      }
+      
+      // Aguarda 2 segundos antes de fechar o modal
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+    
     } catch (err) {
       console.error('Erro ao salvar custos:', err);
       setError('Erro ao salvar os custos. Por favor, tente novamente.');
@@ -343,16 +355,23 @@ export default function CustoViagemCalculator({ veiculo, distancia, valorFrete, 
               )}
 
               <Grid item xs={12}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-                  onClick={salvarCustos}
-                  disabled={loading}
-                  sx={{ mt: 2 }}
-                >
-                  {loading ? 'Salvando...' : 'Salvar Custos'}
-                </Button>
+                <Stack direction="row" spacing={2} justifyContent="flex-end">
+                  <Button
+                    variant="outlined"
+                    startIcon={<CloseIcon />}
+                    onClick={onClose}
+                  >
+                    Fechar
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
+                    onClick={salvarCustos}
+                    disabled={loading}
+                  >
+                    {loading ? 'Salvando...' : 'Salvar Custos'}
+                  </Button>
+                </Stack>
               </Grid>
             </Grid>
           </Grid>

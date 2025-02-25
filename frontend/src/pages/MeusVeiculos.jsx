@@ -16,6 +16,8 @@ import {
   Alert,
   CircularProgress,
   Chip,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Build as BuildIcon, History as HistoryIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -48,6 +50,7 @@ export default function MeusVeiculos() {
     insurance_number: '',
     insurance_expiry: null,
   });
+  const [placaModeloAntigo, setPlacaModeloAntigo] = useState(false);
 
   const tiposVeiculo = [
     'Caminhão 3/4',
@@ -148,9 +151,12 @@ export default function MeusVeiculos() {
       setError('');
 
       // Validações
-      const plateRegex = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
+      const plateRegexAntigo = /^[A-Z]{3}[0-9]{4}$/;
+      const plateRegexNovo = /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/;
+      const plateRegex = placaModeloAntigo ? plateRegexAntigo : plateRegexNovo;
+      
       if (!plateRegex.test(formData.plate.toUpperCase())) {
-        setError('Placa inválida. Use o formato ABC1D23');
+        setError(`Placa inválida. Use o formato ${placaModeloAntigo ? 'ABC1234' : 'ABC1D23'}`);
         return;
       }
 
@@ -527,6 +533,17 @@ export default function MeusVeiculos() {
           <DialogContent sx={{ pt: '16px !important' }}>
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
               <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={placaModeloAntigo}
+                        onChange={(e) => setPlacaModeloAntigo(e.target.checked)}
+                      />
+                    }
+                    label="Usar modelo antigo de placa (AAA-1234)"
+                  />
+                </Grid>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     required
@@ -539,7 +556,7 @@ export default function MeusVeiculos() {
                       style: { textTransform: 'uppercase' },
                       maxLength: 7
                     }}
-                    helperText="Formato: ABC1D23"
+                    helperText={`Formato: ${placaModeloAntigo ? 'ABC1234' : 'ABC1D23'}`}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>

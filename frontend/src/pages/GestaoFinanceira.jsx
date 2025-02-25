@@ -51,35 +51,82 @@ export default function GestaoFinanceira() {
     carregarDados();
   }, [user]);
 
-  const carregarDados = async () => {
+  const carregarDados = async (retry = true) => {
     try {
       setLoading(true);
       setError('');
       
-      const response = await api.get('/freights/financial');
+      console.log('Iniciando carregamento dos dados financeiros...');
+      
+      // Verificar se o usuário está autenticado
+      const token = localStorage.getItem('@MaisCargo:token');
+      if (!token) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const response = await api.get('/freights/data/financial');
+      console.log('Resposta recebida:', response.data);
+      
+      if (!response.data || !response.data.resumo) {
+        throw new Error('Dados financeiros inválidos recebidos do servidor');
+      }
+
       const { resumo, fretesConcluidos, fretesEmAndamento } = response.data;
       
-      setFinanceiro({
-        recebido: parseFloat(resumo.valorRecebido) || 0,
-        aReceber: parseFloat(resumo.valorAReceber) || 0,
-        custosTotais: parseFloat(resumo.custosTotais) || 0,
-        lucroTotal: parseFloat(resumo.lucroTotal) || 0,
-        fretesConcluidos: fretesConcluidos.map(frete => ({
+      // Garantir que todos os valores numéricos sejam válidos
+      const dadosFinanceiros = {
+        recebido: Number(resumo.valorRecebido) || 0,
+        aReceber: Number(resumo.valorAReceber) || 0,
+        custosTotais: Number(resumo.custosTotais) || 0,
+        lucroTotal: Number(resumo.lucroTotal) || 0,
+        fretesConcluidos: Array.isArray(fretesConcluidos) ? fretesConcluidos.map(frete => ({
           ...frete,
-          price: parseFloat(frete.price) || 0,
-          custo_total: parseFloat(frete.custo_total) || 0,
-          lucro_estimado: parseFloat(frete.lucro_estimado) || 0
-        })),
-        fretesEmAndamento: fretesEmAndamento.map(frete => ({
+          price: Number(frete.price) || 0,
+          custo_total: Number(frete.custo_total) || 0,
+          lucro_estimado: Number(frete.lucro_estimado) || 0
+        })) : [],
+        fretesEmAndamento: Array.isArray(fretesEmAndamento) ? fretesEmAndamento.map(frete => ({
           ...frete,
-          price: parseFloat(frete.price) || 0,
-          custo_total: parseFloat(frete.custo_total) || 0,
-          lucro_estimado: parseFloat(frete.lucro_estimado) || 0
-        }))
-      });
+          price: Number(frete.price) || 0,
+          custo_total: Number(frete.custo_total) || 0,
+          lucro_estimado: Number(frete.lucro_estimado) || 0
+        })) : []
+      };
+
+      console.log('Dados financeiros processados:', dadosFinanceiros);
+      setFinanceiro(dadosFinanceiros);
     } catch (err) {
       console.error('Erro ao carregar dados financeiros:', err);
-      setError('Não foi possível carregar os dados financeiros');
+      
+      // Se for erro de autenticação, redirecionar para login
+      if (err.response?.status === 401) {
+        localStorage.removeItem('@MaisCargo:token');
+        localStorage.removeItem('@MaisCargo:user');
+        window.location.href = '/login';
+        return;
+      }
+
+      // Se for erro 500 e for primeira tentativa, tentar novamente
+      if (err.response?.status === 500 && retry) {
+        console.log('Tentando carregar dados novamente em 2 segundos...');
+        setTimeout(() => carregarDados(false), 2000);
+        return;
+      }
+
+      const errorMessage = err.response?.data?.error || 
+                         err.response?.data?.details || 
+                         err.message || 
+                         'Erro desconhecido ao carregar dados financeiros';
+      
+      setError(errorMessage);
+      setFinanceiro({
+        recebido: 0,
+        aReceber: 0,
+        custosTotais: 0,
+        lucroTotal: 0,
+        fretesConcluidos: [],
+        fretesEmAndamento: []
+      });
     } finally {
       setLoading(false);
     }
@@ -271,6 +318,8 @@ export default function GestaoFinanceira() {
                 distancia={selectedFrete.distance || 500}
                 valorFrete={selectedFrete.price}
                 freteId={selectedFrete.id}
+                onClose={() => setCalculadoraOpen(false)}
+                onSave={carregarDados}
               />
             )}
           </DialogContent>

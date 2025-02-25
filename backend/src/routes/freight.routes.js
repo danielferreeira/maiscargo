@@ -8,7 +8,8 @@ const routes = Router();
 routes.use(authMiddleware);
 
 // Rotas específicas primeiro
-routes.get('/available', FreightController.available);
+routes.get('/data/financial', FreightController.getFinancialData);
+routes.get('/data/available', FreightController.available);
 routes.get('/', FreightController.index);
 
 // Rotas com parâmetros depois
@@ -20,6 +21,6 @@ routes.post('/:id/accept', FreightController.accept);
 routes.post('/:id/start', FreightController.startTransport);
 routes.post('/:id/finish', FreightController.finishTransport);
 routes.post('/:id/cancel', FreightController.cancel);
-routes.post('/:id/costs', FreightController.updateCosts);
+routes.put('/:id/costs', FreightController.updateCosts);
 
 export default routes; 

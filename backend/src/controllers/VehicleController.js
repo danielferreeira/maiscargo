@@ -35,7 +35,7 @@ class VehicleController {
       const schema = Yup.object().shape({
         plate: Yup.string()
           .required('Placa é obrigatória')
-          .matches(/^[A-Z]{3}[0-9][0-9A-Z][0-9]{2}$/, 'Placa inválida'),
+          .matches(/^[A-Z]{3}([0-9]{4}|[0-9][A-Z][0-9]{2})$/, 'Placa inválida'),
         type: Yup.string().required('Tipo é obrigatório'),
         brand: Yup.string().required('Marca é obrigatória'),
         model: Yup.string().required('Modelo é obrigatório'),
@@ -113,7 +113,7 @@ class VehicleController {
     try {
       const schema = Yup.object().shape({
         plate: Yup.string()
-          .matches(/^[A-Z]{3}[0-9][0-9A-Z][0-9]{2}$/, 'Placa inválida'),
+          .matches(/^[A-Z]{3}([0-9]{4}|[0-9][A-Z][0-9]{2})$/, 'Placa inválida'),
         type: Yup.string(),
         brand: Yup.string(),
         model: Yup.string(),

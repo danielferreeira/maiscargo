@@ -1,3 +1,4 @@
+import { Model, DataTypes } from 'sequelize';
 import * as Yup from 'yup';
 import { Op } from 'sequelize';
 import Freight from '../models/Freight.js';
@@ -112,9 +113,9 @@ class FreightController {
 
       // Construir a query base para fretes disponíveis
       const whereClause = {
-        status: 'disponivel',
-        carrier_id: null,
-        pickup_date: {
+          status: 'disponivel',
+          carrier_id: null,
+          pickup_date: {
           [Op.gt]: new Date()
         }
       };
@@ -212,13 +213,13 @@ class FreightController {
         const freightRegion = getRegionFromState(freight.origin_state);
         if (transporter.regioes_preferidas?.length > 0 && 
             !transporter.regioes_preferidas.includes(freightRegion)) {
-          return false;
+            return false;
         }
 
         // Verificar tipo de carga preferido
         if (transporter.tipos_carga_preferidos?.length > 0 && 
             !transporter.tipos_carga_preferidos.includes(freight.cargo_type)) {
-          return false;
+            return false;
         }
 
         return true;
@@ -244,7 +245,7 @@ class FreightController {
         const { distance, duration } = calcularDistanciaEDuracao(freight);
 
         return {
-          ...freight.toJSON(),
+        ...freight.toJSON(),
           distance,
           duration,
           distance_from_transporter: freight.real_distance,
@@ -635,39 +636,76 @@ class FreightController {
 
   async getFinancialData(req, res) {
     try {
+      console.log('Iniciando busca de dados financeiros para o transportador:', req.userId);
+      
+      // Verificar se o usuário existe e é um transportador
+      const user = await User.findByPk(req.userId);
+      if (!user) {
+        console.log('Usuário não encontrado:', req.userId);
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+      
+      if (user.type !== 'transportador') {
+        console.log('Usuário não é transportador:', user.type);
+        return res.status(403).json({ error: 'Acesso permitido apenas para transportadores' });
+      }
+
+      console.log('Buscando fretes do transportador...');
       const freights = await Freight.findAll({
         where: {
-          carrier_id: req.userId,
+          carrier_id: req.userId
         },
-        attributes: [
-          'id',
-          'status',
-          'price',
-          'custo_total',
-          'lucro_estimado',
-          'margem_lucro',
-          'pickup_date',
-          'delivery_date',
-          'title',
-          'origin',
-          'destination'
-        ]
+        raw: true // Adiciona esta linha para retornar objetos JavaScript puros
       });
+
+      if (!freights || freights.length === 0) {
+        console.log('Nenhum frete encontrado');
+        return res.json({
+          resumo: {
+            valorRecebido: 0,
+            valorAReceber: 0,
+            custosTotais: 0,
+            lucroTotal: 0
+          },
+          fretesConcluidos: [],
+          fretesEmAndamento: []
+        });
+      }
+
+      console.log(`Encontrados ${freights.length} fretes para o transportador`);
 
       const concluidos = freights.filter(f => f.status === 'finalizado');
       const emAndamento = freights.filter(f => ['aceito', 'em_transporte'].includes(f.status));
 
-      // Garantir que os valores sejam sempre números
-      const valorRecebido = concluidos.reduce((total, frete) => 
-        total + (parseFloat(frete.price) || 0), 0);
-      
-      const valorAReceber = emAndamento.reduce((total, frete) => 
-        total + (parseFloat(frete.price) || 0), 0);
-      
-      const custosTotais = concluidos.reduce((total, frete) => 
-        total + (parseFloat(frete.custo_total) || 0), 0);
-      
+      console.log(`Fretes concluídos: ${concluidos.length}, Fretes em andamento: ${emAndamento.length}`);
+
+      // Garantir que os valores sejam números
+      const valorRecebido = concluidos.reduce((total, frete) => {
+        const valor = Number(frete.price) || 0;
+        console.log(`Frete ${frete.id} - Valor: ${valor}`);
+        return total + valor;
+      }, 0);
+
+      const valorAReceber = emAndamento.reduce((total, frete) => {
+        const valor = Number(frete.price) || 0;
+        console.log(`Frete ${frete.id} - Valor a receber: ${valor}`);
+        return total + valor;
+      }, 0);
+
+      const custosTotais = concluidos.reduce((total, frete) => {
+        const custo = Number(frete.custo_total) || 0;
+        console.log(`Frete ${frete.id} - Custo: ${custo}`);
+        return total + custo;
+      }, 0);
+
       const lucroTotal = valorRecebido - custosTotais;
+
+      console.log('Resumo financeiro calculado:', {
+        valorRecebido,
+        valorAReceber,
+        custosTotais,
+        lucroTotal
+      });
 
       const dadosFinanceiros = {
         resumo: {
@@ -677,23 +715,30 @@ class FreightController {
           lucroTotal: Number(lucroTotal.toFixed(2))
         },
         fretesConcluidos: concluidos.map(frete => ({
-          ...frete.toJSON(),
-          price: parseFloat(frete.price) || 0,
-          custo_total: parseFloat(frete.custo_total) || 0,
-          lucro_estimado: parseFloat(frete.lucro_estimado) || 0
+          ...frete,
+          price: Number(frete.price) || 0,
+          custo_total: Number(frete.custo_total) || 0,
+          lucro_estimado: Number(frete.lucro_estimado) || 0
         })),
         fretesEmAndamento: emAndamento.map(frete => ({
-          ...frete.toJSON(),
-          price: parseFloat(frete.price) || 0,
-          custo_total: parseFloat(frete.custo_total) || 0,
-          lucro_estimado: parseFloat(frete.lucro_estimado) || 0
+          ...frete,
+          price: Number(frete.price) || 0,
+          custo_total: Number(frete.custo_total) || 0,
+          lucro_estimado: Number(frete.lucro_estimado) || 0
         }))
       };
 
       return res.json(dadosFinanceiros);
     } catch (error) {
-      console.error('Erro ao buscar dados financeiros:', error);
-      return res.status(500).json({ error: 'Erro interno do servidor' });
+      console.error('Erro ao buscar dados financeiros:', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.userId
+      });
+      return res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error.message
+      });
     }
   }
 }

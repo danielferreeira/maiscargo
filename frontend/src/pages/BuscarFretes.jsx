@@ -91,7 +91,7 @@ export default function BuscarFretes() {
       setError('');
       console.log('Iniciando carregamento de fretes...');
       
-      const response = await api.get('/freights/available', {
+      const response = await api.get('/freights/data/available', {
         params: { showAll: showAllFreights }
       });
       
