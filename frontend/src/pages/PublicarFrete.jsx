@@ -223,7 +223,7 @@ export default function PublicarFrete() {
         weight: Number(formData.weight),
         vehicle_type: formData.vehicle_type,
         price: Number(formData.price),
-        distance: Math.round(Number(formData.distance) * 1000), // Convertendo km para metros
+        distance: Math.round(Number(formData.distance)), // Mantendo em quilômetros
         duration: formData.duration
       };
 

@@ -310,11 +310,15 @@ class FreightController {
         return res.status(403).json({ error: 'Apenas embarcadores podem criar fretes' });
       }
 
-      console.log('Criando registro do frete...');
-      const freight = await Freight.create({
+      // Garantir que a distância seja armazenada em quilômetros
+      const freightData = {
         ...req.body,
+        distance: Math.round(Number(req.body.distance)), // Armazenar em km
         user_id: req.userId
-      });
+      };
+
+      console.log('Criando registro do frete...');
+      const freight = await Freight.create(freightData);
       console.log('Frete criado com sucesso:', freight.id);
 
       return res.json(freight);
@@ -548,13 +552,23 @@ class FreightController {
 
       const vehicle = await Vehicle.findByPk(freight.vehicle_id);
       
-      const updatedFreight = await freight.update({ status: 'finalizado' });
+      // Atualizar o frete com status finalizado, mantendo a distância original
+      const updatedFreight = await freight.update({
+        status: 'finalizado',
+        // Garantir que a distância seja a mesma da criação do frete
+        distance: freight.distance
+      });
+
+      // Liberar o veículo
       await vehicle.update({ status: 'disponivel' });
 
       return res.json(updatedFreight);
     } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Erro interno do servidor' });
+      console.error('Erro ao finalizar frete:', error);
+      return res.status(500).json({ 
+        error: 'Erro interno do servidor',
+        details: error.message
+      });
     }
   }
 

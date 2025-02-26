@@ -16,11 +16,13 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions
 } from '@mui/material';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import TransportadoresProximos from '../components/TransportadoresProximos';
+import { formatarData, formatarPreco } from '../utils/format';
 
 export default function MeusFretes() {
   const location = useLocation();
@@ -86,24 +88,25 @@ export default function MeusFretes() {
   const handleAction = async (freteId, action) => {
     try {
       setError('');
+      setSuccess('');
+      
       await api.post(`/freights/${freteId}/${action}`);
-      await carregarFretes();
-      setSuccess('Status do frete atualizado com sucesso!');
+      
+      setSuccess(
+        action === 'start' ? 'Transporte iniciado com sucesso!' :
+        action === 'finish' ? 'Frete finalizado com sucesso!' :
+        action === 'cancel' ? 'Frete cancelado com sucesso!' :
+        'Operação realizada com sucesso!'
+      );
+      
+      carregarFretes();
     } catch (err) {
-      console.error('Erro ao atualizar frete:', err);
-      setError('Não foi possível atualizar o status do frete. Tente novamente mais tarde.');
+      console.error('Erro ao executar ação:', err);
+      setError(
+        err.response?.data?.error || 
+        'Erro ao executar ação. Por favor, tente novamente.'
+      );
     }
-  };
-
-  const formatarData = (data) => {
-    return new Date(data).toLocaleDateString('pt-BR');
-  };
-
-  const formatarPreco = (preco) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(preco);
   };
 
   const renderActionButtons = (frete) => {

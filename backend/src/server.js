@@ -25,6 +25,13 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Rota de health check (sem autenticação)
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Demais rotas da API (com autenticação)
 app.use('/api', routes);
 
 // Socket.IO
