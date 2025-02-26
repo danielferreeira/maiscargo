@@ -16,8 +16,11 @@ RUN npm install
 # Copiar código fonte
 COPY . .
 
+# Dar permissão de execução ao script de inicialização
+RUN chmod +x /usr/src/app/start.sh
+
 # Expor porta
 EXPOSE 5173
 
 # Comando para iniciar a aplicação
-CMD ["npm", "run", "dev", "--", "--host"] 
+CMD ["sh", "/usr/src/app/start.sh"] 

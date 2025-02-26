@@ -92,28 +92,70 @@ class UserController {
       }
 
       const schema = Yup.object().shape({
-        name: Yup.string(),
-        email: Yup.string().email(),
-        phone: Yup.string()
-          .transform(value => value?.replace(/\D/g, '')),
-        document: Yup.string()
-          .transform(value => value?.replace(/\D/g, '')),
-        cep: Yup.string()
-          .transform(value => value?.replace(/\D/g, ''))
-          .length(8, 'CEP inválido'),
-        logradouro: Yup.string(),
-        numero: Yup.string(),
-        complemento: Yup.string(),
-        bairro: Yup.string(),
-        cidade: Yup.string(),
-        estado: Yup.string().length(2, 'Estado inválido'),
-        telefone_fixo: Yup.string()
-          .transform(value => value?.replace(/\D/g, '')),
-        telefone_whatsapp: Yup.string()
-          .transform(value => value?.replace(/\D/g, '')),
-        telefone_emergencia: Yup.string()
-          .transform(value => value?.replace(/\D/g, '')),
-        contato_emergencia: Yup.string()
+        name: Yup.string().nullable(),
+        email: Yup.string().email('Email inválido').nullable(),
+        document: Yup.string().nullable(),
+        phone: Yup.string().nullable(),
+        rg: Yup.string().nullable(),
+        rg_emissor: Yup.string().nullable(),
+        cnh: Yup.string().nullable(),
+        cnh_categoria: Yup.string().nullable(),
+        cnh_validade: Yup.date().nullable(),
+        cep: Yup.string().nullable()
+          .test('cep-validation', 'CEP inválido', function(value) {
+            if (!value) return true;
+            return value.length === 8;
+          }),
+        logradouro: Yup.string().nullable()
+          .test('logradouro-required', 'Logradouro é obrigatório', function(value) {
+            // Se algum campo de endereço foi preenchido, logradouro é obrigatório
+            const addressFields = ['cep', 'numero', 'bairro', 'cidade', 'estado'];
+            const hasAddressFields = addressFields.some(field => this.parent[field]);
+            return !hasAddressFields || (hasAddressFields && value);
+          }),
+        numero: Yup.string().nullable()
+          .test('numero-required', 'Número é obrigatório', function(value) {
+            const addressFields = ['cep', 'logradouro', 'bairro', 'cidade', 'estado'];
+            const hasAddressFields = addressFields.some(field => this.parent[field]);
+            return !hasAddressFields || (hasAddressFields && value);
+          }),
+        complemento: Yup.string().nullable(),
+        bairro: Yup.string().nullable()
+          .test('bairro-required', 'Bairro é obrigatório', function(value) {
+            const addressFields = ['cep', 'logradouro', 'numero', 'cidade', 'estado'];
+            const hasAddressFields = addressFields.some(field => this.parent[field]);
+            return !hasAddressFields || (hasAddressFields && value);
+          }),
+        cidade: Yup.string().nullable()
+          .test('cidade-required', 'Cidade é obrigatória', function(value) {
+            const addressFields = ['cep', 'logradouro', 'numero', 'bairro', 'estado'];
+            const hasAddressFields = addressFields.some(field => this.parent[field]);
+            return !hasAddressFields || (hasAddressFields && value);
+          }),
+        estado: Yup.string().nullable()
+          .test('estado-required', 'Estado é obrigatório', function(value) {
+            const addressFields = ['cep', 'logradouro', 'numero', 'bairro', 'cidade'];
+            const hasAddressFields = addressFields.some(field => this.parent[field]);
+            return !hasAddressFields || (hasAddressFields && value);
+          })
+          .test('estado-format', 'Estado deve ter 2 letras maiúsculas', function(value) {
+            if (!value) return true;
+            return /^[A-Z]{2}$/.test(value);
+          }),
+        telefone_fixo: Yup.string().nullable(),
+        telefone_whatsapp: Yup.string().nullable(),
+        telefone_emergencia: Yup.string().nullable()
+          .test('telefone-emergencia-required', 'Telefone de emergência é obrigatório quando contato de emergência é fornecido', function(value) {
+            return !this.parent.contato_emergencia || (this.parent.contato_emergencia && value);
+          }),
+        contato_emergencia: Yup.string().nullable()
+          .test('contato-emergencia-required', 'Contato de emergência é obrigatório quando telefone de emergência é fornecido', function(value) {
+            return !this.parent.telefone_emergencia || (this.parent.telefone_emergencia && value);
+          }),
+        raio_busca: Yup.number().nullable(),
+        raio_sugerido: Yup.number().nullable(),
+        regioes_preferidas: Yup.array().of(Yup.string()).nullable(),
+        tipos_carga_preferidos: Yup.array().of(Yup.string()).nullable()
       });
 
       try {

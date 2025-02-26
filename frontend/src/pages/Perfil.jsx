@@ -242,24 +242,57 @@ export default function Perfil() {
       }
 
       // Preparar dados para envio
-      const updateData = {
-        ...formData,
-        // Remover caracteres especiais dos campos numéricos
-        cep: formData.cep ? formData.cep.replace(/\D/g, '') : null,
-        telefone_fixo: formData.telefone_fixo ? formData.telefone_fixo.replace(/\D/g, '') : null,
-        telefone_whatsapp: formData.telefone_whatsapp ? formData.telefone_whatsapp.replace(/\D/g, '') : null,
-        telefone_emergencia: formData.telefone_emergencia ? formData.telefone_emergencia.replace(/\D/g, '') : null,
-        // Atualizar também o campo phone com o telefone_whatsapp
-        phone: formData.telefone_whatsapp ? formData.telefone_whatsapp.replace(/\D/g, '') : null,
-        // Garantir que arrays sejam enviados como arrays vazios se não houver dados
-        regioes_preferidas: formData.regioes_preferidas || [],
-        tipos_carga_preferidos: formData.tipos_carga_preferidos || [],
-        // Converter valores numéricos
-        raio_busca: formData.raio_busca ? Number(formData.raio_busca) : null,
-        raio_sugerido: formData.raio_sugerido ? Number(formData.raio_sugerido) : null,
-        // Garantir que a data seja enviada no formato correto
-        cnh_validade: formData.cnh_validade ? formData.cnh_validade.toISOString() : null
-      };
+      const updateData = {};
+
+      // Adiciona apenas os campos relevantes baseado na aba atual
+      if (tabValue === 0) { // Aba de Documentos
+        if (user?.type === 'transportador') {
+          Object.assign(updateData, {
+            document: formData.document?.replace(/\D/g, ''),
+            rg: formData.rg,
+            rg_emissor: formData.rg_emissor,
+            cnh: formData.cnh,
+            cnh_categoria: formData.cnh_categoria,
+            cnh_validade: formData.cnh_validade ? formData.cnh_validade.toISOString() : null
+          });
+        } else {
+          Object.assign(updateData, {
+            name: formData.name,
+            email: formData.email,
+            document: formData.document?.replace(/\D/g, ''),
+            phone: formData.phone?.replace(/\D/g, '')
+          });
+        }
+      }
+      else if (tabValue === 1) { // Aba de Endereço
+        Object.assign(updateData, {
+          cep: formData.cep?.replace(/\D/g, ''),
+          logradouro: formData.logradouro,
+          numero: formData.numero,
+          complemento: formData.complemento,
+          bairro: formData.bairro,
+          cidade: formData.cidade,
+          estado: formData.estado
+        });
+      }
+      else if (tabValue === 2) { // Aba de Contatos
+        Object.assign(updateData, {
+          telefone_fixo: formData.telefone_fixo?.replace(/\D/g, ''),
+          telefone_whatsapp: formData.telefone_whatsapp?.replace(/\D/g, ''),
+          telefone_emergencia: formData.telefone_emergencia?.replace(/\D/g, ''),
+          contato_emergencia: formData.contato_emergencia,
+          // Atualiza também o campo phone com o telefone_whatsapp
+          phone: formData.telefone_whatsapp?.replace(/\D/g, '')
+        });
+      }
+      else if (tabValue === 3 && user?.type === 'transportador') { // Aba de Preferências
+        Object.assign(updateData, {
+          raio_busca: Number(formData.raio_busca) || null,
+          raio_sugerido: Number(formData.raio_sugerido) || null,
+          regioes_preferidas: formData.regioes_preferidas || [],
+          tipos_carga_preferidos: formData.tipos_carga_preferidos || []
+        });
+      }
 
       console.log('Enviando dados para atualização:', updateData);
       const response = await api.put('/users/profile', updateData);
@@ -373,28 +406,36 @@ export default function Perfil() {
       }
     }
     else if (tabValue === 1) { // Aba de Endereço
-      const enderecoFields = {
-        cep: 'CEP é obrigatório',
-        logradouro: 'Logradouro é obrigatório',
-        numero: 'Número é obrigatório',
-        bairro: 'Bairro é obrigatório',
-        cidade: 'Cidade é obrigatória',
-        estado: 'Estado é obrigatório'
-      };
-
-      Object.entries(enderecoFields).forEach(([field, message]) => {
-        if (!formData[field] || formData[field].trim() === '') {
-          errors[field] = message;
+      // Validar CEP
+      if (!formData.cep) {
+        errors.cep = 'CEP é obrigatório';
+      } else {
+        const cleanCep = formData.cep.replace(/\D/g, '');
+        if (cleanCep.length !== 8) {
+          errors.cep = 'CEP deve ter 8 dígitos';
         }
-      });
-
-      // Validar formato do CEP
-      if (formData.cep && formData.cep.replace(/\D/g, '').length !== 8) {
-        errors.cep = 'CEP deve ter 8 dígitos';
       }
 
-      // Validar formato do estado
-      if (formData.estado && !/^[A-Z]{2}$/.test(formData.estado)) {
+      // Validar campos obrigatórios
+      if (!formData.logradouro?.trim()) {
+        errors.logradouro = 'Logradouro é obrigatório';
+      }
+
+      if (!formData.numero?.trim()) {
+        errors.numero = 'Número é obrigatório';
+      }
+
+      if (!formData.bairro?.trim()) {
+        errors.bairro = 'Bairro é obrigatório';
+      }
+
+      if (!formData.cidade?.trim()) {
+        errors.cidade = 'Cidade é obrigatória';
+      }
+
+      if (!formData.estado?.trim()) {
+        errors.estado = 'Estado é obrigatório';
+      } else if (!/^[A-Z]{2}$/.test(formData.estado)) {
         errors.estado = 'Estado deve ter 2 letras maiúsculas';
       }
     } 
@@ -433,7 +474,8 @@ export default function Perfil() {
       }
     }
 
-    return errors;
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   if (loading) {

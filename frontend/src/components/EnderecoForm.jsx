@@ -116,6 +116,7 @@ export default function EnderecoForm({ formData, setFormData, errors = {} }) {
             <TextField
               {...inputProps}
               fullWidth
+              required
               label="CEP"
               name="cep"
               error={!!errors.cep || !!cepError}
@@ -135,6 +136,7 @@ export default function EnderecoForm({ formData, setFormData, errors = {} }) {
       <Grid item xs={12} sm={8}>
         <TextField
           fullWidth
+          required
           label="Logradouro"
           name="logradouro"
           value={formData.logradouro || ''}
@@ -148,6 +150,7 @@ export default function EnderecoForm({ formData, setFormData, errors = {} }) {
       <Grid item xs={12} sm={4}>
         <TextField
           fullWidth
+          required
           label="Número"
           name="numero"
           value={formData.numero || ''}
@@ -172,6 +175,7 @@ export default function EnderecoForm({ formData, setFormData, errors = {} }) {
       <Grid item xs={12}>
         <TextField
           fullWidth
+          required
           label="Bairro"
           name="bairro"
           value={formData.bairro || ''}
@@ -185,6 +189,7 @@ export default function EnderecoForm({ formData, setFormData, errors = {} }) {
       <Grid item xs={12} sm={8}>
         <TextField
           fullWidth
+          required
           label="Cidade"
           name="cidade"
           value={formData.cidade || ''}
@@ -196,7 +201,7 @@ export default function EnderecoForm({ formData, setFormData, errors = {} }) {
       </Grid>
 
       <Grid item xs={12} sm={4}>
-        <FormControl fullWidth error={!!errors.estado}>
+        <FormControl fullWidth required error={!!errors.estado}>
           <InputLabel id="estado-label">Estado</InputLabel>
           <Select
             labelId="estado-label"
