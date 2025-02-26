@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -16,8 +16,17 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import {
+  PlayArrow as PlayArrowIcon,
+  Stop as StopIcon,
+  Cancel as CancelIcon,
+  Edit as EditIcon,
+  Group as GroupIcon,
+} from '@mui/icons-material';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -26,6 +35,7 @@ import { formatarData, formatarPreco } from '../utils/format';
 
 export default function MeusFretes() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [fretes, setFretes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,25 +124,39 @@ export default function MeusFretes() {
       switch (frete.status) {
         case 'aceito':
           return (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => handleAction(frete.id, 'start')}
-              fullWidth
-            >
-              Iniciar Transporte
-            </Button>
+            <Tooltip title="Iniciar Transporte">
+              <IconButton
+                color="primary"
+                onClick={() => handleAction(frete.id, 'start')}
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  }
+                }}
+              >
+                <PlayArrowIcon />
+              </IconButton>
+            </Tooltip>
           );
         case 'em_transporte':
           return (
-            <Button
-              variant="contained"
-              color="success"
-              onClick={() => handleAction(frete.id, 'finish')}
-              fullWidth
-            >
-              Finalizar Transporte
-            </Button>
+            <Tooltip title="Finalizar Transporte">
+              <IconButton
+                color="success"
+                onClick={() => handleAction(frete.id, 'finish')}
+                sx={{
+                  bgcolor: 'success.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'success.dark',
+                  }
+                }}
+              >
+                <StopIcon />
+              </IconButton>
+            </Tooltip>
           );
         default:
           return null;
@@ -140,14 +164,21 @@ export default function MeusFretes() {
     } else { // embarcador
       if (frete.status === 'disponivel') {
         return (
-          <Button
-            variant="contained"
-            color="error"
-            onClick={() => handleAction(frete.id, 'cancel')}
-            fullWidth
-          >
-            Cancelar Frete
-          </Button>
+          <Tooltip title="Cancelar Frete">
+            <IconButton
+              color="error"
+              onClick={() => handleAction(frete.id, 'cancel')}
+              sx={{
+                bgcolor: 'error.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'error.dark',
+                }
+              }}
+            >
+              <CancelIcon />
+            </IconButton>
+          </Tooltip>
         );
       }
       return null;
@@ -174,16 +205,46 @@ export default function MeusFretes() {
 
   const renderFreteButtons = (frete) => {
     return (
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 1,
+        justifyContent: 'flex-end',
+        alignItems: 'center'
+      }}>
         {renderActionButtons(frete)}
         {user.type === 'embarcador' && frete.status === 'disponivel' && (
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => handleVerTransportadores(frete.id)}
-          >
-            Ver Transportadores
-          </Button>
+          <>
+            <Tooltip title="Ver Transportadores">
+              <IconButton
+                color="primary"
+                onClick={() => handleVerTransportadores(frete.id)}
+                sx={{
+                  border: 1,
+                  borderColor: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'primary.50',
+                  }
+                }}
+              >
+                <GroupIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Editar Frete">
+              <IconButton
+                color="primary"
+                onClick={() => navigate(`/editar-frete/${frete.id}`)}
+                sx={{
+                  border: 1,
+                  borderColor: 'primary.main',
+                  '&:hover': {
+                    bgcolor: 'primary.50',
+                  }
+                }}
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+          </>
         )}
       </Box>
     );
@@ -193,23 +254,60 @@ export default function MeusFretes() {
     <Layout>
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, mb: 4 }}>
-          <Typography variant="h4" gutterBottom>
+          <Typography 
+            variant="h4" 
+            sx={{
+              fontWeight: 600,
+              color: 'primary.main',
+              borderBottom: '2px solid',
+              borderColor: 'primary.main',
+              pb: 1,
+              mb: 3
+            }}
+          >
             Meus Fretes
           </Typography>
 
           {success && (
-            <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+            <Alert 
+              severity="success" 
+              sx={{ 
+                mb: 2,
+                '& .MuiAlert-message': {
+                  fontSize: '1rem'
+                }
+              }}
+              onClose={() => setSuccess('')}
+            >
               {success}
             </Alert>
           )}
 
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 2,
+                '& .MuiAlert-message': {
+                  fontSize: '1rem'
+                }
+              }}
+            >
               {error}
             </Alert>
           )}
 
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Box sx={{ 
+            borderBottom: 1, 
+            borderColor: 'divider', 
+            mb: 3,
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontSize: '1rem',
+              fontWeight: 500,
+              minWidth: '120px'
+            }
+          }}>
             <Tabs value={tabValue} onChange={handleTabChange}>
               <Tab label="Ativos" />
               <Tab label="Finalizados" />

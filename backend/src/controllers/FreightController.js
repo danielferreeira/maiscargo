@@ -389,10 +389,14 @@ class FreightController {
         return res.status(400).json({ error: 'Falha na validação' });
       }
 
+      const user = await User.findByPk(req.userId);
+      if (user.type !== 'embarcador') {
+        return res.status(403).json({ error: 'Apenas embarcadores podem editar fretes' });
+      }
+
       const freight = await Freight.findOne({
         where: {
           id: req.params.id,
-          user_id: req.userId,
         },
       });
 

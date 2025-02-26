@@ -13,6 +13,7 @@ import MeusVeiculos from './pages/MeusVeiculos'
 import GestaoFinanceira from './pages/GestaoFinanceira'
 import TipoUsuarioSelector from './pages/TipoUsuarioSelector'
 import Perfil from './pages/Perfil'
+import EditarFrete from './pages/EditarFrete'
 
 // Tema personalizado
 const theme = createTheme({
@@ -129,6 +130,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <GestaoFinanceira />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/editar-frete/:id"
+              element={
+                <PrivateRoute>
+                  <EditarFrete />
                 </PrivateRoute>
               }
             />
